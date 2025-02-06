@@ -32,26 +32,27 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 logger.info('Database configured with Supabase PostgreSQL')
 
-# Configure CORS - most permissive settings
+# Configure CORS
 CORS(app, resources={
     r"/*": {
-        "origins": "*",
-        "methods": ["*"],
-        "allow_headers": "*",
-        "expose_headers": "*",
-        "max_age": 86400,
-        "supports_credentials": False,
-        "send_wildcard": True,
-        "vary_header": False
+        "origins": ["https://telepathy-test-frontend.onrender.com", "http://localhost:3000"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization", "Accept"],
+        "expose_headers": ["Content-Type"],
+        "supports_credentials": True,
+        "send_wildcard": False
     }
 })
 
 @app.after_request
 def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
-    response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-    logger.debug(f"Response headers: {dict(response.headers)}")
+    origin = request.headers.get('Origin')
+    if origin in ['https://telepathy-test-frontend.onrender.com', 'http://localhost:3000']:
+        response.headers.add('Access-Control-Allow-Origin', origin)
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept')
+        response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        response.headers.add('Cross-Origin-Opener-Policy', 'same-origin-allow-popups')
     return response
 
 # Configure SocketIO with enhanced WebSocket support
@@ -107,24 +108,13 @@ class User(db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     name = db.Column(db.String(100), nullable=False)
 
-    def __init__(self, id, email, name):
-        self.id = id
-        self.email = email
-        self.name = name
-
-    def to_dict(self):
-        return {
-            'user_id': self.id,
-            'email': self.email,
-            'name': self.name
-        }
-
 @app.route('/auth/google', methods=['POST', 'OPTIONS'])
 def google_auth():
     if request.method == 'OPTIONS':
         return '', 204
 
     try:
+        # Get and verify token
         data = request.get_json()
         if not data or 'credential' not in data:
             return jsonify({'error': 'No credential provided'}), 400
@@ -134,30 +124,37 @@ def google_auth():
             return jsonify({'error': 'Server configuration error'}), 500
 
         try:
-            token = data['credential']
-            request_session = requests.Request()
-            id_info = id_token.verify_oauth2_token(token, request_session, client_id)
+            id_info = id_token.verify_oauth2_token(
+                data['credential'],
+                requests.Request(),
+                client_id
+            )
+        except Exception as e:
+            return jsonify({'error': f'Invalid token: {str(e)}'}), 400
 
-            if id_info['aud'] != client_id:
-                raise ValueError('Wrong audience.')
+        # Extract user info
+        user_id = id_info.get('sub')
+        email = id_info.get('email')
+        name = id_info.get('name', '')
 
-            user_id = id_info['sub']
-            email = id_info['email']
-            name = id_info.get('name', '')
+        if not user_id or not email:
+            return jsonify({'error': 'Missing user info'}), 400
 
-            if not user_id or not email:
-                return jsonify({'error': 'Missing user info'}), 400
-
+        # Handle user
+        try:
             user = User.query.get(user_id)
             if not user:
                 user = User(id=user_id, email=email, name=name)
                 db.session.add(user)
                 db.session.commit()
 
-            return jsonify(user.to_dict()), 200
+            # Return simple dict to avoid recursion
+            return jsonify({
+                'user_id': user.id,
+                'email': user.email,
+                'name': user.name
+            }), 200
 
-        except ValueError as e:
-            return jsonify({'error': f'Invalid token: {str(e)}'}), 400
         except Exception as e:
             db.session.rollback()
             return jsonify({'error': f'Database error: {str(e)}'}), 500

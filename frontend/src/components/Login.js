@@ -32,9 +32,11 @@ const Login = () => {
       window.google.accounts.id.initialize({
         client_id: client_id,
         callback: handleCredentialResponse,
+        context: 'signin',
+        ux_mode: 'popup',
         auto_select: false,
-        cancel_on_tap_outside: true,
-        use_fedcm_for_prompt: false
+        itp_support: true,
+        allowed_parent_origin: window.location.origin
       });
 
       window.google.accounts.id.renderButton(
@@ -43,9 +45,10 @@ const Login = () => {
           type: 'standard',
           theme: 'outline', 
           size: 'large',
-          text: 'continue_with',
+          text: 'signin_with',
           shape: 'rectangular',
-          logo_alignment: 'left'
+          logo_alignment: 'left',
+          width: 250
         }
       );
 
