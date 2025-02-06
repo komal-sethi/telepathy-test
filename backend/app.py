@@ -21,12 +21,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 logger.info('Database configured with Supabase PostgreSQL')
 
 # Configure CORS
-allowed_origins = [os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000')]
-logger.info(f"Configuring CORS with allowed origins: {allowed_origins}")
-
 CORS(app, resources={
     r"/*": {
-        "origins": allowed_origins,
+        "origins": '*',
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type"]
     }
@@ -40,7 +37,7 @@ def health_check():
 # Configure SocketIO with enhanced WebSocket support
 socketio = SocketIO(
     app,
-    cors_allowed_origins='*',  # Allow all origins for WebSocket
+    cors_allowed_origins='*',
     async_mode='gevent',
     logger=True,
     engineio_logger=True,
