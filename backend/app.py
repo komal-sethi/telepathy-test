@@ -17,6 +17,24 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default_secret_key')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Configure CORS
+CORS(app, resources={
+    r"/*": {
+        "origins": ["https://telepathy-test.onrender.com"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
+
+# Configure SocketIO
+socketio = SocketIO(
+    app,
+    cors_allowed_origins=["https://telepathy-test.onrender.com"],
+    async_mode='gevent',
+    logger=True,
+    engineio_logger=True
+)
+
 logger.info(f"Starting application with DATABASE_URL: {app.config['SQLALCHEMY_DATABASE_URI']}")
 
 db = SQLAlchemy(app)

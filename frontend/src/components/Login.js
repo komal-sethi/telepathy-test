@@ -29,12 +29,14 @@ const Login = () => {
         return;
       }
 
-      window.google.accounts.id.initialize({
+      const config = {
         client_id: client_id,
         callback: handleCredentialResponse,
-        auto_select: false,
-        cancel_on_tap_outside: true,
-      });
+        context: 'signin',
+        ux_mode: 'popup',
+        auto_prompt: false
+      };
+      window.google.accounts.id.initialize(config);
 
       window.google.accounts.id.renderButton(
         document.getElementById('google-signin-button'),

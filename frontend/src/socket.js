@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client';
 
-const BACKEND_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const BACKEND_URL = process.env.REACT_APP_API_URL || 'https://telepathy-test-backend.onrender.com';
 
 console.log('Connecting to backend at:', BACKEND_URL);
 
