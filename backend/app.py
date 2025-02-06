@@ -18,10 +18,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Configure CORS
-allowed_origins = [
-    "https://telepathy-test.onrender.com",
-    "http://localhost:3000"
-]
+allowed_origins = [os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000')]
+logger.info(f"Configuring CORS with allowed origins: {allowed_origins}")
 
 CORS(app, resources={
     r"/*": {
