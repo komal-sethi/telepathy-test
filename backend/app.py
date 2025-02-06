@@ -112,83 +112,49 @@ def google_auth():
         return '', 204
 
     try:
-        # Get the token
         data = request.get_json()
         if not data or 'credential' not in data:
-            return Response(
-                json.dumps({'error': 'No credential provided'}, cls=JSONEncoder),
-                status=400,
-                mimetype='application/json'
-            )
+            return jsonify({'error': 'No credential provided'}), 400
 
-        # Get client ID
         client_id = os.getenv('GOOGLE_CLIENT_ID')
         if not client_id:
-            return Response(
-                json.dumps({'error': 'Server configuration error'}, cls=JSONEncoder),
-                status=500,
-                mimetype='application/json'
-            )
+            return jsonify({'error': 'Server configuration error'}), 500
 
-        # Verify token
         try:
-            idinfo = id_token.verify_oauth2_token(
-                data['credential'],
-                requests.Request(),
-                client_id
-            )
-        except Exception as e:
-            return Response(
-                json.dumps({'error': f'Token verification failed: {str(e)}'}, cls=JSONEncoder),
-                status=400,
-                mimetype='application/json'
-            )
+            token = data['credential']
+            request_session = requests.Request()
+            id_info = id_token.verify_oauth2_token(token, request_session, client_id)
 
-        # Get user info
-        user_id = idinfo.get('sub')
-        email = idinfo.get('email')
-        name = idinfo.get('name', '')
+            if id_info['aud'] != client_id:
+                raise ValueError('Wrong audience.')
 
-        if not user_id or not email:
-            return Response(
-                json.dumps({'error': 'Invalid token data'}, cls=JSONEncoder),
-                status=400,
-                mimetype='application/json'
-            )
+            user_id = id_info['sub']
+            email = id_info['email']
+            name = id_info.get('name', '')
 
-        # Handle user
-        try:
+            if not user_id or not email:
+                return jsonify({'error': 'Missing user info'}), 400
+
             user = User.query.get(user_id)
             if not user:
                 user = User(id=user_id, email=email, name=name)
                 db.session.add(user)
                 db.session.commit()
 
-            # Success response
-            return Response(
-                json.dumps({
-                    'user_id': user_id,
-                    'email': email,
-                    'name': name
-                }, cls=JSONEncoder),
-                status=200,
-                mimetype='application/json'
-            )
+            return jsonify({
+                'user_id': user_id,
+                'email': email,
+                'name': name
+            }), 200
 
+        except ValueError as e:
+            return jsonify({'error': f'Invalid token: {str(e)}'}), 400
         except Exception as e:
             db.session.rollback()
-            return Response(
-                json.dumps({'error': f'Database error: {str(e)}'}, cls=JSONEncoder),
-                status=500,
-                mimetype='application/json'
-            )
+            return jsonify({'error': f'Database error: {str(e)}'}), 500
 
     except Exception as e:
-        return Response(
-            json.dumps({'error': f'Server error: {str(e)}'}, cls=JSONEncoder),
-            status=500,
-            mimetype='application/json'
-        )
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 @socketio.on('connect')
 def handle_connect():
