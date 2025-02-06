@@ -1,7 +1,7 @@
 services:
   # Backend service
   - type: web
-    name: telepathy-test-backend
+    name: telepathy-test
     env: python
     rootDir: backend
     buildCommand: pip install -r requirements.txt
@@ -10,17 +10,6 @@ services:
     envVars:
       - key: PYTHONUNBUFFERED
         value: "true"
-    headers:
-      - path: /*
-        name: Access-Control-Allow-Origin
-        value: "*"
-      - path: /*
-        name: Access-Control-Allow-Methods
-        value: "GET, POST, OPTIONS"
-      - path: /*
-        name: Access-Control-Allow-Headers
-        value: "Content-Type"
-    envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: DATABASE_URL
@@ -32,7 +21,22 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: CORS_ALLOWED_ORIGINS
+        value: "*"
+      - key: BASE_URL
         value: https://telepathy-test.onrender.com
+    headers:
+      - path: /*
+        name: Access-Control-Allow-Origin
+        value: "*"
+      - path: /*
+        name: Access-Control-Allow-Methods
+        value: "GET, POST, OPTIONS"
+      - path: /*
+        name: Access-Control-Allow-Headers
+        value: "Content-Type"
+      - path: /*
+        name: X-Frame-Options
+        value: "DENY"
 
   # Frontend service
   - type: web
