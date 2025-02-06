@@ -1,17 +1,24 @@
 import os
 import sys
+import json
 import logging
 from datetime import datetime
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, Response, make_response
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask_cors import CORS
 from google.oauth2 import id_token
 from google.auth.transport import requests
 from flask_sqlalchemy import SQLAlchemy
-from google.oauth2 import id_token
-from google.auth.transport import requests
-from datetime import datetime
 from geventwebsocket.websocket import WebSocket
+
+class JSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        try:
+            if hasattr(obj, '__dict__'):
+                return obj.__dict__
+            return str(obj)
+        except:
+            return str(obj)
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -104,18 +111,24 @@ def google_auth():
     if request.method == 'OPTIONS':
         return '', 204
 
-    logger.info("Google auth endpoint called")
-
     try:
         # Get the token
         data = request.get_json()
         if not data or 'credential' not in data:
-            return make_response({'error': 'No credential provided'}, 400)
+            return Response(
+                json.dumps({'error': 'No credential provided'}, cls=JSONEncoder),
+                status=400,
+                mimetype='application/json'
+            )
 
         # Get client ID
         client_id = os.getenv('GOOGLE_CLIENT_ID')
         if not client_id:
-            return make_response({'error': 'Server configuration error'}, 500)
+            return Response(
+                json.dumps({'error': 'Server configuration error'}, cls=JSONEncoder),
+                status=500,
+                mimetype='application/json'
+            )
 
         # Verify token
         try:
@@ -125,7 +138,11 @@ def google_auth():
                 client_id
             )
         except Exception as e:
-            return make_response({'error': f'Token verification failed: {str(e)}'}, 400)
+            return Response(
+                json.dumps({'error': f'Token verification failed: {str(e)}'}, cls=JSONEncoder),
+                status=400,
+                mimetype='application/json'
+            )
 
         # Get user info
         user_id = idinfo.get('sub')
@@ -133,7 +150,11 @@ def google_auth():
         name = idinfo.get('name', '')
 
         if not user_id or not email:
-            return make_response({'error': 'Invalid token data'}, 400)
+            return Response(
+                json.dumps({'error': 'Invalid token data'}, cls=JSONEncoder),
+                status=400,
+                mimetype='application/json'
+            )
 
         # Handle user
         try:
@@ -144,18 +165,30 @@ def google_auth():
                 db.session.commit()
 
             # Success response
-            return make_response({
-                'user_id': user_id,
-                'email': email,
-                'name': name
-            }, 200)
+            return Response(
+                json.dumps({
+                    'user_id': user_id,
+                    'email': email,
+                    'name': name
+                }, cls=JSONEncoder),
+                status=200,
+                mimetype='application/json'
+            )
 
         except Exception as e:
             db.session.rollback()
-            return make_response({'error': f'Database error: {str(e)}'}, 500)
+            return Response(
+                json.dumps({'error': f'Database error: {str(e)}'}, cls=JSONEncoder),
+                status=500,
+                mimetype='application/json'
+            )
 
     except Exception as e:
-        return make_response({'error': f'Server error: {str(e)}'}, 500)
+        return Response(
+            json.dumps({'error': f'Server error: {str(e)}'}, cls=JSONEncoder),
+            status=500,
+            mimetype='application/json'
+        )
 
 @socketio.on('connect')
 def handle_connect():
