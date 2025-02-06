@@ -34,7 +34,7 @@ const Login = () => {
         callback: handleCredentialResponse,
         auto_select: false,
         cancel_on_tap_outside: true,
-        prompt_parent_id: 'google-signin-button',
+        use_fedcm_for_prompt: false
       });
 
       window.google.accounts.id.renderButton(
@@ -65,9 +65,10 @@ const Login = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
-        mode: 'no-cors',
-        body: JSON.stringify({ token: response.credential }),
+        mode: 'cors',
+        body: JSON.stringify({ credential: response.credential }),
       });
 
       if (!res.ok) {

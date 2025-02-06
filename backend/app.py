@@ -105,10 +105,12 @@ def google_auth():
     logger.debug(f"Request data: {request.get_data(as_text=True)}")
 
     try:
-        token = request.json.get('token')
-        if not token:
-            logger.error("No token provided in request")
-            return jsonify({'error': 'No token provided'}), 400
+        credential = request.json.get('credential')
+        if not credential:
+            logger.error("No credential provided in request")
+            return jsonify({'error': 'No credential provided'}), 400
+            
+        token = credential  # The credential is the ID token
 
         logger.debug(f"Verifying Google token")
         client_id = os.getenv('GOOGLE_CLIENT_ID')
