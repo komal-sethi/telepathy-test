@@ -13,7 +13,13 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent')
-CORS(app)
+CORS(app, origins=[
+    "http://localhost:3000",
+    "https://telepathy-test-frontend.onrender.com"
+])
+@app.route('/health')
+def health_check():
+    return jsonify({'status': 'healthy'}), 200
 
 class Game(db.Model):
     id = db.Column(db.String(50), primary_key=True)
@@ -118,4 +124,5 @@ def check_card(data):
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    socketio.run(app, debug=True, port=5000)
+    port = int(os.getenv('PORT', 5000))
+    socketio.run(app, host='0.0.0.0', port=port, debug=False)
