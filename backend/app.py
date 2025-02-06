@@ -49,16 +49,6 @@ def health_check():
     logger.info("Health check endpoint called")
     return jsonify({"status": "healthy", "timestamp": datetime.utcnow().isoformat()})
 
-    "https://telepathy-test-frontend.onrender.com"
-]
-CORS(app, origins=allowed_origins)
-logger.info(f"Configured CORS with allowed origins: {allowed_origins}")
-
-@app.route('/health')
-def health_check():
-    logger.debug("Health check endpoint called")
-    return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()}), 200
-
 class Game(db.Model):
     id = db.Column(db.String(50), primary_key=True)
     sender_id = db.Column(db.String(100), nullable=False)
