@@ -65,10 +65,8 @@ const Login = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
         },
-        mode: 'cors',
-        credentials: 'omit',
+        mode: 'no-cors',
         body: JSON.stringify({ token: response.credential }),
       });
 

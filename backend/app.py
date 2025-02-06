@@ -21,15 +21,17 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 logger.info('Database configured with Supabase PostgreSQL')
 
-# Configure CORS
+# Configure CORS - most permissive settings
 CORS(app, resources={
     r"/*": {
-        "origins": '*',
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"],
-        "expose_headers": ["Content-Type"],
+        "origins": "*",
+        "methods": ["*"],
+        "allow_headers": "*",
+        "expose_headers": "*",
+        "max_age": 86400,
         "supports_credentials": False,
-        "send_wildcard": True
+        "send_wildcard": True,
+        "vary_header": False
     }
 })
 
@@ -44,20 +46,21 @@ def after_request(response):
 # Configure SocketIO with enhanced WebSocket support
 socketio = SocketIO(
     app,
-    cors_allowed_origins='*',
+    cors_allowed_origins="*",
     async_mode='gevent',
     logger=True,
     engineio_logger=True,
     ping_timeout=60000,
     ping_interval=25000,
-    transports=['polling'],
+    transports=['polling', 'websocket'],
     always_connect=True,
     path='/socket.io',
     cookie=False,
     manage_session=False,
-    allow_upgrades=False,
+    allow_upgrades=True,
     max_http_buffer_size=1e8,
-    handle_session=False
+    handle_session=False,
+    cors_credentials=False
 )
 
 logger.info(f"Starting application with DATABASE_URL: {app.config['SQLALCHEMY_DATABASE_URI']}")
