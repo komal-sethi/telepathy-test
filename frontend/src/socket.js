@@ -7,6 +7,7 @@ console.log('Connecting to backend at:', BACKEND_URL);
 export const socket = io(BACKEND_URL, {
   autoConnect: true,
   transports: ['polling'],
+  upgrade: false,
   path: '/socket.io',
   reconnection: true,
   reconnectionAttempts: 5,

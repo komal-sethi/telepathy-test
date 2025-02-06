@@ -53,7 +53,8 @@ socketio = SocketIO(
     always_connect=True,
     path='/socket.io',
     cookie=False,
-    manage_session=False
+    manage_session=False,
+    allow_upgrades=False
 )
 
 logger.info(f"Starting application with DATABASE_URL: {app.config['SQLALCHEMY_DATABASE_URI']}")
