@@ -32,6 +32,11 @@ CORS(app, resources={
     }
 })
 
+@app.route('/health')
+def health_check():
+    logger.info('Health check endpoint called')
+    return jsonify({'status': 'healthy', 'timestamp': datetime.utcnow().isoformat()})
+
 # Configure SocketIO with enhanced WebSocket support
 socketio = SocketIO(
     app,
