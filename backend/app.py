@@ -47,14 +47,13 @@ socketio = SocketIO(
     async_mode='gevent',
     logger=True,
     engineio_logger=True,
-    ping_timeout=60,
-    ping_interval=25,
-    transports=['websocket', 'polling'],
+    ping_timeout=20,
+    ping_interval=10,
+    transports=['polling'],
     always_connect=True,
     path='/socket.io',
     cookie=False,
-    manage_session=False,
-    websocket_class=WebSocket
+    manage_session=False
 )
 
 logger.info(f"Starting application with DATABASE_URL: {app.config['SQLALCHEMY_DATABASE_URI']}")

@@ -6,15 +6,14 @@ console.log('Connecting to backend at:', BACKEND_URL);
 
 export const socket = io(BACKEND_URL, {
   autoConnect: true,
-  transports: ['polling', 'websocket'],
+  transports: ['polling'],
   path: '/socket.io',
   reconnection: true,
   reconnectionAttempts: 5,
   reconnectionDelay: 1000,
-  withCredentials: true,
-  extraHeaders: {
-    'Access-Control-Allow-Origin': '*'
-  }
+  withCredentials: false,
+  forceNew: true,
+  timeout: 20000
 });
 
 socket.on('connect', () => {
