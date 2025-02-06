@@ -1,8 +1,12 @@
 import os
+import sys
 import logging
-from flask import Flask, request, jsonify
+from datetime import datetime
+from flask import Flask, request, jsonify, make_response
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask_cors import CORS
+from google.oauth2 import id_token
+from google.auth.transport import requests
 from flask_sqlalchemy import SQLAlchemy
 from google.oauth2 import id_token
 from google.auth.transport import requests
@@ -132,10 +136,14 @@ def google_auth():
             logger.error(f"Token verification failed: {str(ve)}")
             return jsonify({'error': 'Invalid token', 'details': str(ve)}), 400
             
-        # Extract user info
-        user_id = str(idinfo.get('sub'))  # Ensure it's a string
-        email = str(idinfo.get('email', ''))
-        name = str(idinfo.get('name', ''))
+        # Extract and validate user info
+        try:
+            user_id = str(idinfo.get('sub', '')) if idinfo.get('sub') else ''
+            email = str(idinfo.get('email', '')) if idinfo.get('email') else ''
+            name = str(idinfo.get('name', '')) if idinfo.get('name') else ''
+        except Exception as e:
+            logger.error(f"Error extracting user info: {str(e)}")
+            return jsonify({'error': 'Invalid token data', 'details': str(e)}), 400
         
         if not user_id or not email:
             logger.error(f"Missing required user info from token")
@@ -158,12 +166,13 @@ def google_auth():
             else:
                 logger.info(f"Found existing user: {email}")
 
-            # Return user data
-            return jsonify({
+            # Return user data as a dictionary
+            response_data = {
                 'user_id': str(user.id),
                 'email': str(user.email),
                 'name': str(user.name)
-            }), 200
+            }
+            return jsonify(response_data), 200
 
         except Exception as db_error:
             db.session.rollback()
