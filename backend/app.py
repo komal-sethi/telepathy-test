@@ -26,9 +26,10 @@ CORS(app, resources={
     r"/*": {
         "origins": '*',
         "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"],
+        "allow_headers": ["Content-Type", "Authorization"],
         "expose_headers": ["Content-Type"],
-        "supports_credentials": True
+        "supports_credentials": False,
+        "send_wildcard": True
     }
 })
 
@@ -43,18 +44,20 @@ def after_request(response):
 # Configure SocketIO with enhanced WebSocket support
 socketio = SocketIO(
     app,
-    cors_allowed_origins=['https://telepathy-test-frontend.onrender.com'],
+    cors_allowed_origins='*',
     async_mode='gevent',
     logger=True,
     engineio_logger=True,
-    ping_timeout=20,
-    ping_interval=10,
+    ping_timeout=60000,
+    ping_interval=25000,
     transports=['polling'],
     always_connect=True,
     path='/socket.io',
     cookie=False,
     manage_session=False,
-    allow_upgrades=False
+    allow_upgrades=False,
+    max_http_buffer_size=1e8,
+    handle_session=False
 )
 
 logger.info(f"Starting application with DATABASE_URL: {app.config['SQLALCHEMY_DATABASE_URI']}")
