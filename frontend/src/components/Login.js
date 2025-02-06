@@ -29,22 +29,23 @@ const Login = () => {
         return;
       }
 
-      const config = {
+      window.google.accounts.id.initialize({
         client_id: client_id,
         callback: handleCredentialResponse,
-        context: 'signin',
-        ux_mode: 'popup',
-        auto_prompt: false
-      };
-      window.google.accounts.id.initialize(config);
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        prompt_parent_id: 'google-signin-button',
+      });
 
       window.google.accounts.id.renderButton(
         document.getElementById('google-signin-button'),
         { 
+          type: 'standard',
           theme: 'outline', 
           size: 'large',
-          width: 250,
-          text: 'signin_with'
+          text: 'continue_with',
+          shape: 'rectangular',
+          logo_alignment: 'left'
         }
       );
 
