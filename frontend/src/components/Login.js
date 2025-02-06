@@ -65,12 +65,17 @@ const Login = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
+        mode: 'cors',
+        credentials: 'omit',
         body: JSON.stringify({ token: response.credential }),
       });
 
       if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
+        const errorData = await res.json().catch(() => null);
+        console.error('Backend error details:', errorData);
+        throw new Error(`HTTP error! status: ${res.status}, details: ${JSON.stringify(errorData)}`);
       }
 
       const data = await res.json();

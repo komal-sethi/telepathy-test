@@ -92,19 +92,28 @@ class User(db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     name = db.Column(db.String(100), nullable=False)
 
-@app.route('/auth/google', methods=['POST'])
+@app.route('/auth/google', methods=['POST', 'OPTIONS'])
 def google_auth():
+    if request.method == 'OPTIONS':
+        return '', 204
+
     logger.info("Google auth endpoint called")
-    token = request.json.get('token')
-    
-    if not token:
-        logger.error("No token provided in request")
-        return jsonify({'error': 'No token provided'}), 400
+    logger.debug(f"Request headers: {dict(request.headers)}")
+    logger.debug(f"Request data: {request.get_data(as_text=True)}")
 
     try:
+        token = request.json.get('token')
+        if not token:
+            logger.error("No token provided in request")
+            return jsonify({'error': 'No token provided'}), 400
+
         logger.debug(f"Verifying Google token")
         client_id = os.getenv('GOOGLE_CLIENT_ID')
-        logger.debug(f"Using client_id: {client_id[:10]}...")  # Log only first 10 chars for security
+        if not client_id:
+            logger.error("GOOGLE_CLIENT_ID environment variable not set")
+            return jsonify({'error': 'Server configuration error'}), 500
+
+        logger.debug(f"Using client_id: {client_id[:10]}...")
         
         idinfo = id_token.verify_oauth2_token(
             token, 
@@ -112,33 +121,48 @@ def google_auth():
             client_id
         )
         
+        if not idinfo:
+            logger.error("Token verification returned no info")
+            return jsonify({'error': 'Token verification failed'}), 400
+
         logger.info(f"Token verified for user email: {idinfo.get('email')}")
         
-        user_id = idinfo['sub']
-        email = idinfo['email']
+        user_id = idinfo.get('sub')
+        email = idinfo.get('email')
         name = idinfo.get('name', '')
 
-        # Check or create user
-        user = User.query.get(user_id)
-        if not user:
-            logger.info(f"Creating new user with email: {email}")
-            user = User(id=user_id, email=email, name=name)
-            db.session.add(user)
-            db.session.commit()
-        else:
-            logger.info(f"Existing user found with email: {email}")
+        if not user_id or not email:
+            logger.error(f"Missing required user info. user_id: {bool(user_id)}, email: {bool(email)}")
+            return jsonify({'error': 'Invalid token data'}), 400
 
-        return jsonify({
-            'user_id': user_id,
-            'email': email,
-            'name': name
-        }), 200
+        try:
+            # Check or create user
+            user = User.query.get(user_id)
+            if not user:
+                logger.info(f"Creating new user with email: {email}")
+                user = User(id=user_id, email=email, name=name)
+                db.session.add(user)
+                db.session.commit()
+            else:
+                logger.info(f"Existing user found with email: {email}")
+
+            return jsonify({
+                'user_id': user_id,
+                'email': email,
+                'name': name
+            }), 200
+
+        except Exception as db_error:
+            logger.error(f"Database error: {str(db_error)}")
+            db.session.rollback()
+            return jsonify({'error': 'Database error', 'details': str(db_error)}), 500
 
     except ValueError as e:
         logger.error(f"Token verification failed: {str(e)}")
         return jsonify({'error': 'Invalid token', 'details': str(e)}), 400
     except Exception as e:
         logger.error(f"Unexpected error in google_auth: {str(e)}")
+        return jsonify({'error': 'Server error', 'details': str(e)}), 500
         return jsonify({'error': 'Server error', 'details': str(e)}), 500
 
 @socketio.on('connect')
