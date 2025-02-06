@@ -58,7 +58,7 @@ A web application that lets users test their telepathic connection with friends 
    - Click "New +" → "Web Service"
    - Connect your GitHub repository
    - Configure the service:
-     - Name: `telepathy-test-backend`
+     - Name: `telepathy-test`
      - Environment: Python
      - Build Command: `pip install -r requirements.txt`
      - Start Command: `gunicorn app:app`
