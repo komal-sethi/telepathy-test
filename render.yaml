@@ -10,6 +10,16 @@ services:
     envVars:
       - key: PYTHONUNBUFFERED
         value: "true"
+    headers:
+      - path: /*
+        name: Access-Control-Allow-Origin
+        value: "*"
+      - path: /*
+        name: Access-Control-Allow-Methods
+        value: "GET, POST, OPTIONS"
+      - path: /*
+        name: Access-Control-Allow-Headers
+        value: "Content-Type"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0

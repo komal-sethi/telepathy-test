@@ -25,9 +25,19 @@ CORS(app, resources={
     r"/*": {
         "origins": '*',
         "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"]
+        "allow_headers": ["Content-Type"],
+        "expose_headers": ["Content-Type"],
+        "supports_credentials": True
     }
 })
+
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+    response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    logger.debug(f"Response headers: {dict(response.headers)}")
+    return response
 
 # Configure SocketIO with enhanced WebSocket support
 socketio = SocketIO(
@@ -51,7 +61,19 @@ db = SQLAlchemy(app)
 @app.route('/health')
 def health_check():
     logger.info("Health check endpoint called")
-    return jsonify({"status": "healthy", "timestamp": datetime.utcnow().isoformat()})
+    logger.debug(f"Request headers: {dict(request.headers)}")
+    logger.debug(f"Request method: {request.method}")
+    logger.debug(f"Request path: {request.path}")
+    response = jsonify({
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "request_info": {
+            "method": request.method,
+            "path": request.path,
+            "headers": dict(request.headers)
+        }
+    })
+    return response
 
 class Game(db.Model):
     id = db.Column(db.String(50), primary_key=True)
