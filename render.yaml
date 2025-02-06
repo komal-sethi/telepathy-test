@@ -40,18 +40,18 @@ services:
 
   # Frontend service
   - type: web
-    name: telepathy-test
+    name: telepathy-test-frontend
     env: static
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: ./build
     envVars:
       - key: REACT_APP_API_URL
-        value: https://telepathy-test-backend.onrender.com
+        value: https://telepathy-test.onrender.com
       - key: REACT_APP_GOOGLE_CLIENT_ID
         sync: false
     headers:
       - path: /*
         name: Access-Control-Allow-Origin
-        value: https://telepathy-test-backend.onrender.com
+        value: https://telepathy-test.onrender.com
 
