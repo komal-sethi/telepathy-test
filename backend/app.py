@@ -3,7 +3,7 @@ import sys
 import json
 import logging
 from datetime import datetime
-from flask import Flask, request, Response, make_response
+from flask import Flask, request, Response, make_response, jsonify
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask_cors import CORS
 from google.oauth2 import id_token
