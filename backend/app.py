@@ -18,9 +18,14 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Configure CORS
+allowed_origins = [
+    "https://telepathy-test.onrender.com",
+    "http://localhost:3000"
+]
+
 CORS(app, resources={
     r"/*": {
-        "origins": ["https://telepathy-test.onrender.com"],
+        "origins": allowed_origins,
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type"]
     }
@@ -29,7 +34,7 @@ CORS(app, resources={
 # Configure SocketIO
 socketio = SocketIO(
     app,
-    cors_allowed_origins=["https://telepathy-test.onrender.com"],
+    cors_allowed_origins=allowed_origins,
     async_mode='gevent',
     logger=True,
     engineio_logger=True
@@ -39,16 +44,11 @@ logger.info(f"Starting application with DATABASE_URL: {app.config['SQLALCHEMY_DA
 
 db = SQLAlchemy(app)
 
-# Configure Socket.IO with logging
-socketio = SocketIO(app, 
-                   cors_allowed_origins="*", 
-                   async_mode='gevent',
-                   logger=True, 
-                   engineio_logger=True)
+@app.route('/health')
+def health_check():
+    logger.info("Health check endpoint called")
+    return jsonify({"status": "healthy", "timestamp": datetime.utcnow().isoformat()})
 
-# Configure CORS
-allowed_origins = [
-    "http://localhost:3000",
     "https://telepathy-test-frontend.onrender.com"
 ]
 CORS(app, origins=allowed_origins)
