@@ -7,6 +7,7 @@ from flask_sqlalchemy import SQLAlchemy
 from google.oauth2 import id_token
 from google.auth.transport import requests
 from datetime import datetime
+from geventwebsocket.websocket import WebSocket
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -42,16 +43,18 @@ def after_request(response):
 # Configure SocketIO with enhanced WebSocket support
 socketio = SocketIO(
     app,
-    cors_allowed_origins='*',
+    cors_allowed_origins=['https://telepathy-test-frontend.onrender.com'],
     async_mode='gevent',
     logger=True,
     engineio_logger=True,
     ping_timeout=60,
     ping_interval=25,
-    transports=['polling', 'websocket'],
+    transports=['websocket', 'polling'],
     always_connect=True,
     path='/socket.io',
-    cookie=False
+    cookie=False,
+    manage_session=False,
+    websocket_class=WebSocket
 )
 
 logger.info(f"Starting application with DATABASE_URL: {app.config['SQLALCHEMY_DATABASE_URI']}")
