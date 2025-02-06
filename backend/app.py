@@ -120,47 +120,58 @@ def google_auth():
 
         logger.debug(f"Using client_id: {client_id[:10]}...")
         
-        idinfo = id_token.verify_oauth2_token(
-            token, 
-            requests.Request(), 
-            client_id
-        )
+        # Verify the token
+        try:
+            idinfo = id_token.verify_oauth2_token(
+                token,
+                requests.Request(),
+                client_id,
+                clock_skew_in_seconds=10
+            )
+        except ValueError as ve:
+            logger.error(f"Token verification failed: {str(ve)}")
+            return jsonify({'error': 'Invalid token', 'details': str(ve)}), 400
+            
+        # Extract user info
+        user_id = str(idinfo.get('sub'))  # Ensure it's a string
+        email = str(idinfo.get('email', ''))
+        name = str(idinfo.get('name', ''))
         
-        if not idinfo:
-            logger.error("Token verification returned no info")
-            return jsonify({'error': 'Token verification failed'}), 400
-
-        logger.info(f"Token verified for user email: {idinfo.get('email')}")
-        
-        user_id = idinfo.get('sub')
-        email = idinfo.get('email')
-        name = idinfo.get('name', '')
-
         if not user_id or not email:
-            logger.error(f"Missing required user info. user_id: {bool(user_id)}, email: {bool(email)}")
+            logger.error(f"Missing required user info from token")
             return jsonify({'error': 'Invalid token data'}), 400
 
         try:
-            # Check or create user
+            # Check if user exists
             user = User.query.get(user_id)
+            
             if not user:
-                logger.info(f"Creating new user with email: {email}")
-                user = User(id=user_id, email=email, name=name)
+                # Create new user
+                user = User(
+                    id=user_id,
+                    email=email,
+                    name=name
+                )
                 db.session.add(user)
                 db.session.commit()
+                logger.info(f"Created new user: {email}")
             else:
-                logger.info(f"Existing user found with email: {email}")
+                logger.info(f"Found existing user: {email}")
 
+            # Return user data
             return jsonify({
-                'user_id': user_id,
-                'email': email,
-                'name': name
+                'user_id': str(user.id),
+                'email': str(user.email),
+                'name': str(user.name)
             }), 200
 
         except Exception as db_error:
-            logger.error(f"Database error: {str(db_error)}")
             db.session.rollback()
-            return jsonify({'error': 'Database error', 'details': str(db_error)}), 500
+            logger.error(f"Database error: {str(db_error)}")
+            return jsonify({
+                'error': 'Database error',
+                'details': str(db_error)
+            }), 500
 
     except ValueError as e:
         logger.error(f"Token verification failed: {str(e)}")
