@@ -105,90 +105,57 @@ def google_auth():
         return '', 204
 
     logger.info("Google auth endpoint called")
-    logger.debug(f"Request headers: {dict(request.headers)}")
-    logger.debug(f"Request data: {request.get_data(as_text=True)}")
 
     try:
-        credential = request.json.get('credential')
-        if not credential:
-            logger.error("No credential provided in request")
-            return jsonify({'error': 'No credential provided'}), 400
-            
-        token = credential  # The credential is the ID token
+        # Get the token
+        data = request.get_json()
+        if not data or 'credential' not in data:
+            return make_response({'error': 'No credential provided'}, 400)
 
-        logger.debug(f"Verifying Google token")
+        # Get client ID
         client_id = os.getenv('GOOGLE_CLIENT_ID')
         if not client_id:
-            logger.error("GOOGLE_CLIENT_ID environment variable not set")
-            return jsonify({'error': 'Server configuration error'}), 500
+            return make_response({'error': 'Server configuration error'}, 500)
 
-        logger.debug(f"Using client_id: {client_id[:10]}...")
-        
-        # Verify the token
+        # Verify token
         try:
             idinfo = id_token.verify_oauth2_token(
-                token,
+                data['credential'],
                 requests.Request(),
-                client_id,
-                clock_skew_in_seconds=10
+                client_id
             )
-        except ValueError as ve:
-            logger.error(f"Token verification failed: {str(ve)}")
-            return jsonify({'error': 'Invalid token', 'details': str(ve)}), 400
-            
-        # Extract and validate user info
-        try:
-            user_id = str(idinfo.get('sub', '')) if idinfo.get('sub') else ''
-            email = str(idinfo.get('email', '')) if idinfo.get('email') else ''
-            name = str(idinfo.get('name', '')) if idinfo.get('name') else ''
         except Exception as e:
-            logger.error(f"Error extracting user info: {str(e)}")
-            return jsonify({'error': 'Invalid token data', 'details': str(e)}), 400
-        
-        if not user_id or not email:
-            logger.error(f"Missing required user info from token")
-            return jsonify({'error': 'Invalid token data'}), 400
+            return make_response({'error': f'Token verification failed: {str(e)}'}, 400)
 
+        # Get user info
+        user_id = idinfo.get('sub')
+        email = idinfo.get('email')
+        name = idinfo.get('name', '')
+
+        if not user_id or not email:
+            return make_response({'error': 'Invalid token data'}, 400)
+
+        # Handle user
         try:
-            # Check if user exists
             user = User.query.get(user_id)
-            
             if not user:
-                # Create new user
-                user = User(
-                    id=user_id,
-                    email=email,
-                    name=name
-                )
+                user = User(id=user_id, email=email, name=name)
                 db.session.add(user)
                 db.session.commit()
-                logger.info(f"Created new user: {email}")
-            else:
-                logger.info(f"Found existing user: {email}")
 
-            # Return user data as a dictionary
-            response_data = {
-                'user_id': str(user.id),
-                'email': str(user.email),
-                'name': str(user.name)
-            }
-            return jsonify(response_data), 200
+            # Success response
+            return make_response({
+                'user_id': user_id,
+                'email': email,
+                'name': name
+            }, 200)
 
-        except Exception as db_error:
+        except Exception as e:
             db.session.rollback()
-            logger.error(f"Database error: {str(db_error)}")
-            return jsonify({
-                'error': 'Database error',
-                'details': str(db_error)
-            }), 500
+            return make_response({'error': f'Database error: {str(e)}'}, 500)
 
-    except ValueError as e:
-        logger.error(f"Token verification failed: {str(e)}")
-        return jsonify({'error': 'Invalid token', 'details': str(e)}), 400
     except Exception as e:
-        logger.error(f"Unexpected error in google_auth: {str(e)}")
-        return jsonify({'error': 'Server error', 'details': str(e)}), 500
-        return jsonify({'error': 'Server error', 'details': str(e)}), 500
+        return make_response({'error': f'Server error: {str(e)}'}, 500)
 
 @socketio.on('connect')
 def handle_connect():
