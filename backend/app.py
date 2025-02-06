@@ -102,9 +102,22 @@ class Game(db.Model):
     status = db.Column(db.String(20), default='pending')
 
 class User(db.Model):
+    __tablename__ = 'users'
     id = db.Column(db.String(100), primary_key=True)
     email = db.Column(db.String(100), unique=True, nullable=False)
     name = db.Column(db.String(100), nullable=False)
+
+    def __init__(self, id, email, name):
+        self.id = id
+        self.email = email
+        self.name = name
+
+    def to_dict(self):
+        return {
+            'user_id': self.id,
+            'email': self.email,
+            'name': self.name
+        }
 
 @app.route('/auth/google', methods=['POST', 'OPTIONS'])
 def google_auth():
@@ -141,11 +154,7 @@ def google_auth():
                 db.session.add(user)
                 db.session.commit()
 
-            return jsonify({
-                'user_id': user_id,
-                'email': email,
-                'name': name
-            }), 200
+            return jsonify(user.to_dict()), 200
 
         except ValueError as e:
             return jsonify({'error': f'Invalid token: {str(e)}'}), 400
