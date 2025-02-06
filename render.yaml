@@ -1,0 +1,38 @@
+services:
+  # Backend service
+  - type: web
+    name: telepathy-test-backend
+    env: python
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && gunicorn --worker-class gevent -w 1 app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.0
+      - key: DATABASE_URL
+        fromDatabase:
+          name: telepathy-test-db
+          property: connectionString
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+
+  # Frontend service
+  - type: web
+    name: telepathy-test
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://telepathy-test-backend.onrender.com
+      - key: REACT_APP_GOOGLE_CLIENT_ID
+        sync: false
+
+databases:
+  - name: telepathy-test-db
+    databaseName: telepathy_test
+    user: telepathy_test
+    plan: free
