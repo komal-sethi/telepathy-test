@@ -14,9 +14,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: DATABASE_URL
-        fromDatabase:
-          name: telepathy-test-db
-          property: connectionString
+        value: postgresql://postgres:txg8mfv2HDF.fzr!vjn@db.moataxbdkiohngptgdgs.supabase.co:5432/postgres
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
@@ -43,8 +41,3 @@ services:
         name: Access-Control-Allow-Origin
         value: https://telepathy-test-backend.onrender.com
 
-databases:
-  - name: telepathy-test-db
-    databaseName: telepathy_test
-    user: telepathy_test
-    plan: free

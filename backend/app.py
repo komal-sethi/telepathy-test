@@ -14,8 +14,11 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default_secret_key')
+
+# Configure database
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+logger.info('Database configured with Supabase PostgreSQL')
 
 # Configure CORS
 allowed_origins = [os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000')]
