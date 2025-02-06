@@ -29,13 +29,18 @@ CORS(app, resources={
     }
 })
 
-# Configure SocketIO
+# Configure SocketIO with enhanced WebSocket support
 socketio = SocketIO(
     app,
     cors_allowed_origins=allowed_origins,
     async_mode='gevent',
     logger=True,
-    engineio_logger=True
+    engineio_logger=True,
+    ping_timeout=60,
+    ping_interval=25,
+    transports=['websocket'],
+    always_connect=True,
+    path='/socket.io'
 )
 
 logger.info(f"Starting application with DATABASE_URL: {app.config['SQLALCHEMY_DATABASE_URI']}")
